@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# mkpasswd.py
+# hashpass.py
 
 # Author: Ken Spencer
 # Author Nick: Iota
@@ -13,7 +13,7 @@ import re
 import hashlib
     
 
-def mkpasswd(irc, source, args):
+def _hash(irc, source, args):
     """<password> [digest]
     Hashes a given password with the given digest, when 'digest' isn't given, defaults to sha256"""
     digest = ""
@@ -54,4 +54,4 @@ def algorithms(irc, source, args):
 
     
 utils.add_cmd(algorithms, "algorithms")
-utils.add_cmd(mkpasswd, "mkpasswd")
+utils.add_cmd(_hash, "hash")

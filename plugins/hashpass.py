@@ -53,5 +53,5 @@ def algorithms(irc, source, args):
         irc.error("Not enough arguments. Needs 1: query.", private=True)
 
     
-utils.add_cmd(algorithms, "algorithms")
-utils.add_cmd(_hash, "hash")
+utils.add_cmd(algorithms, "algorithms", featured=True)
+utils.add_cmd(_hash, "hash", featured=True)

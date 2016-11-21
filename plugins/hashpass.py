@@ -19,6 +19,7 @@ def _hash(irc, source, args):
     digest = ""
     try:
         password = args[0]
+        password = password.encode('utf-8')
         try:
             digest = args[1]
         except IndexError:
@@ -28,13 +29,13 @@ def _hash(irc, source, args):
         if digest:
             if digest in digests:
                 d = hashlib.new("%s" % digest)
-                d.update(b'%s' % password.encode('utf-8'))
+                d.update(password)
                 irc.reply(d.hexdigest(), private=True)
             else:
                 irc.error("hash algorithm '%s' unavailable, see 'algorithms'" % digest, private=True)
         else:
             d = hashlib.new("sha256")
-            d.update(b'%s' % password.encode('utf-8'))
+            d.update(password)
             irc.reply(d.hexdigest(), private=True)
     except IndexError:
         irc.error("Not enough arguments. Needs 1-2: password, digest (optional).", private=True)

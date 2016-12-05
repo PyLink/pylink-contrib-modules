@@ -1,4 +1,9 @@
-# passgen.py
+"""
+passgen.py: Generates passwords/random strings given inputt criteria.
+"""
+
+__authors__ = [('Ken Spencer (Iota)', 'iota@electrocode.net')]
+__version__ = '0.1'
 
 from pylinkirc import utils
 from pylinkirc.log import log
@@ -41,14 +46,14 @@ def passgen(irc, source, args):
     template = ""
     length = 15
     lengtharg = ""
-    try: 
+    try:
         inputargs = args[0]
     except IndexError:
         irc.error("no input given, using sane defaults")
 
     try:
         lengtharg = int(args[0])
-        
+
         if lengtharg < 0:
             raise TypeError("length must be an unsigned integer, a positive number, or 0 (to use default length")
         elif lengtharg == 0:
@@ -57,7 +62,7 @@ def passgen(irc, source, args):
 
     except TypeError:
         irc.error("length must be an unsigned integer")
-    
+
     try:
         template = args[1]
     except IndexError:
@@ -65,25 +70,25 @@ def passgen(irc, source, args):
 
     if lengtharg == 0 and template == "":
         irc.error("using default length and a default template")
-        
+
     result = ""
     if isinstance(lengtharg, int):
         if lengtharg == "" and template == "":
             template = "[\c\\u\d]"
             template = template + "{%s}" % length
-            result = sg("%s" % template).render()            
+            result = sg("%s" % template).render()
         if lengtharg == 0 and template == "":
             template = "[\c\\u\d\p]"
             template = template + "{%s}" % length
             result = sg("%s" % template).render()
         elif lengtharg > 0 and template == "":
-            template = "[\c\\u\d\p]"        
+            template = "[\c\\u\d\p]"
             result = sg("%s{%s}" % (template, lengtharg)).render()
         elif lengtharg == 0 and template != "":
             result = sg("%s" % template).render()
         else:
             irc.error("part of your input was invalid")
-        
+
     password = result
     irc.reply(password, private=True)
 utils.add_cmd(passgen, "passgen")

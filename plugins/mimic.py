@@ -2,6 +2,10 @@
 mimic.py: Echoes ZNC (energymech)-format chatlogs to channels by spawning fake users and talking
 as them. Useful for training AI bots and the like.
 """
+
+__authors__ = [('James Lu', 'james@overdrivenetworks.com')]
+__version__ = '0.1'
+
 import re
 import glob
 import time

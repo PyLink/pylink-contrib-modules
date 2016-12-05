@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
-# hashpass.py
+"""
+hashpass.py: Hashes arbitrary passwords via supported algorithms.
+"""
 
-# Author: Ken Spencer
-# Author Nick: Iota
-# Version: 0.0.1
-# License: MPL
+__authors__ = [('Ken Spencer (Iota)', 'iota@electrocode.net')]
+__version__ = '0.0.1'
 
 from pylinkirc import utils
 from pylinkirc.log import log
 
 import re
 import hashlib
-    
+
 
 def _hash(irc, source, args):
     """<password> [digest]
@@ -25,7 +25,7 @@ def _hash(irc, source, args):
         except IndexError:
             digest = "sha256"
         # DRY'ing
-        digests = hashlib.algorithms_available 
+        digests = hashlib.algorithms_available
         if digest:
             if digest in digests:
                 d = hashlib.new("%s" % digest)
@@ -53,6 +53,6 @@ def algorithms(irc, source, args):
     except IndexError:
         irc.error("Not enough arguments. Needs 1: query.", private=True)
 
-    
+
 utils.add_cmd(algorithms, "algorithms", featured=True)
 utils.add_cmd(_hash, "hash", featured=True)

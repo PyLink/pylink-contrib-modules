@@ -1,5 +1,5 @@
 """
-passgen.py: Generates passwords/random strings given inputt criteria.
+passgen.py: Generates passwords/random strings given input criteria.
 """
 
 __authors__ = [('Ken Spencer (Iota)', 'iota@electrocode.net')]

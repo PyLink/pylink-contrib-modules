@@ -18,12 +18,12 @@ def get_cf():
 
     return CloudFlare.CloudFlare(email=email, token=key, raw=True)
 
-rr_add = utils.IRCParser()
-rr_add.add_argument("name")
-rr_add.add_argument("content")
+cf_add_parser = utils.IRCParser()
+cf_add_parser.add_argument("name")
+cf_add_parser.add_argument("content")
 # TODO: autodetect the record type; it's simple enough to do...
-rr_add.add_argument("-t", "--type", choices=["A", "AAAA", "CNAME"], required=True)
-rr_add.add_argument("-l", "--ttl", type=int, default=1)
+cf_add_parser.add_argument("-t", "--type", choices=["A", "AAAA", "CNAME"], required=True)
+cf_add_parser.add_argument("-l", "--ttl", type=int, default=1)
 def cf_add(irc, source, args):
     """<subdomain> <address> --type <type> [--ttl <ttl>]
 
@@ -39,7 +39,7 @@ def cf_add(irc, source, args):
     if not zone:
         irc.error("No target zone ID specified! Configure it via a 'cloudflare::target_zone' option.")
         return
-    args = rr_add.parse_args(args)
+    args = cf_add_parser.parse_args(args)
 
     body = {
         "type":    args.type,
@@ -53,13 +53,13 @@ def cf_add(irc, source, args):
     irc.reply("Record Added. %(name)s as %(content)s" % result, private=False)
     irc.reply("Record ID: %(id)s" % result, private=False)
 
-utils.add_cmd(cf_add, "rr-add", featured=True)
+utils.add_cmd(cf_add, "cf-add", featured=True)
 
-rr_show = utils.IRCParser()
-rr_show.add_argument("-t", "--type", choices=["A", "AAAA", "CNAME"])
-rr_show.add_argument("-n", "--name")
-rr_show.add_argument("-c", "--content")
-rr_show.add_argument("-o", "--order", default="type")
+cf_show_parser = utils.IRCParser()
+cf_show_parser.add_argument("-t", "--type", choices=["A", "AAAA", "CNAME"])
+cf_show_parser.add_argument("-n", "--name")
+cf_show_parser.add_argument("-c", "--content")
+cf_show_parser.add_argument("-o", "--order", default="type")
 def cf_show(irc, source, args):
     """[<options>]
 
@@ -73,14 +73,14 @@ def cf_show(irc, source, args):
 
     -o / --order : Order by ... (type, content, name)
     """
-    permissions.checkPermissions(irc, source, ['cloudflare.show'])
+    permissions.checkPermissions(irc, source, ['cloudflare.cf-show'])
     cf = get_cf()
     zone = conf.conf.get("cloudflare", {}).get('target_zone')
     if not zone:
         irc.error("No target zone ID specified! Configure it via a 'cloudflare::target_zone' option.")
         return
 
-    args = rr_show.parse_args(args)
+    args = cf_show_parser.parse_args(args)
 
     body = {
         "order": args.order,
@@ -100,24 +100,24 @@ def cf_show(irc, source, args):
     for res in result:
         irc.reply("\x02Name\x02: %(name)s \x02Content\x02: %(content)s" % res, private=False)
         irc.reply("\x02ID\x02: %(id)s" % res, private=False)
-utils.add_cmd(cf_show, "rr-show", featured=True)
+utils.add_cmd(cf_show, "cf-show", featured=True)
 
-rr_rem = utils.IRCParser()
-rr_rem.add_argument("id")
+cf_rem_parser = utils.IRCParser()
+cf_rem_parser.add_argument("id")
 def cf_rem(irc, source, args):
     """<record id>
 
     Removes a record by its ID (Use the "rr-show" command to display a list of records).
     """
-    permissions.checkPermissions(irc, source, ['cloudflare.rem'])
+    permissions.checkPermissions(irc, source, ['cloudflare.cf-rem'])
     zone = conf.conf.get("cloudflare", {}).get('target_zone')
     cf = get_cf()
     if not zone:
         irc.error("No target zone ID specified! Configure it via a 'cloudflare::target_zone' option.")
         return
-    args = rr_rem.parse_args(args)
+    args = cf_rem_parser.parse_args(args)
 
     response = cf.zones.dns_records.delete(zone, args.id)
     result = response["result"]
     irc.reply("Record Removed. ID: %(id)s" % result, private=False)
-utils.add_cmd(cf_rem, "rr-rem", featured=True)
+utils.add_cmd(cf_rem, "cf-rem", featured=True)

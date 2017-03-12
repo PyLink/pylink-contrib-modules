@@ -57,15 +57,13 @@ utils.add_cmd(cf_add, "cf-add", featured=True)
 
 cf_show_parser = utils.IRCParser()
 cf_show_parser.add_argument("-t", "--type", choices=["A", "AAAA", "CNAME"])
-cf_show_parser.add_argument("-n", "--name")
+cf_show_parser.add_argument("subdomain", nargs='?')
 cf_show_parser.add_argument("-c", "--content")
 cf_show_parser.add_argument("-o", "--order", default="type")
 def cf_show(irc, source, args):
-    """[<options>]
+    """[<subdomain>] [--type <type>] [--content <record content>] [--order <sort order>]
 
     Searches CloudFlare DNS records. The following options are supported:
-
-    -n / --name : Name / Subdomain
 
     -t / --type : Type of record
 
@@ -87,8 +85,10 @@ def cf_show(irc, source, args):
         "type":  args.type
     }
 
-    if args.name:
-        body["name"] = args.name
+    if args.subdomain:
+        # Add the domain to the lookup name so that less typing is needed.
+        base_domain = cf.zones.get(zone)['result']['name']
+        body["name"] = '%s.%s' % (args.subdomain, base_domain)
     if args.content:
         body["content"] = args.content
 

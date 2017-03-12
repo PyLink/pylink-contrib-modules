@@ -33,7 +33,7 @@ def cf_add(irc, source, args):
 
     -l / --ttl : 'time to live' of record (If not given, ttl is made automatic)
     """
-    permissions.checkPermissions(irc, source, ['cloudflare.add'])
+    permissions.checkPermissions(irc, source, ['cloudflare.cf-add'])
     cf = get_cf()
     zone = conf.conf.get("cloudflare", {}).get('target_zone')
     if not zone:

@@ -121,3 +121,75 @@ def cf_rem(irc, source, args):
     result = response["result"]
     irc.reply("Record Removed. ID: %(id)s" % result, private=False)
 utils.add_cmd(cf_rem, "cf-rem", featured=True)
+
+pool_parser = utils.IRCParser()
+pool_parser.add_argument("target_subdomain")
+pool_parser.add_argument("source_subdomain")
+def pool(irc, source, args):
+    """<target subdomain> <source subdomain>
+
+    Copies + merges all records from source subdomain into the target subdomain. This can be
+    used to maintain IRC round robins, for example.
+    """
+    permissions.checkPermissions(irc, source, ['cloudflare.pool'])
+    args = pool_parser.parse_args(args)
+    cf = get_cf()
+    zone = conf.conf.get("cloudflare", {}).get('target_zone')
+    if not zone:
+        irc.error("No target zone ID specified! Configure it via a 'cloudflare::target_zone' option.")
+        return
+
+    base_domain = cf.zones.get(zone)['result']['name']
+    # API request body
+    body = {'name': '%s.%s' % (args.source_subdomain, base_domain)}
+
+    processed = 0
+    # Iterate over all DNS records in the source subdomain
+    for record in cf.zones.dns_records.get(zone, params=body)['result']:
+        irc.reply('Copying record for %s (ttl %s) from %s to %s' %
+                  (record['content'], record['ttl'], args.source_subdomain, args.target_subdomain))
+
+        # Switch the record name and add them into the new subdomain
+        record['name'] = args.target_subdomain
+        cf.zones.dns_records.post(zone, data=record)
+        processed += 1
+    else:
+        irc.reply('Done, processed %s result(s).' % processed)
+utils.add_cmd(pool, featured=True)
+
+depool_parser = utils.IRCParser()
+depool_parser.add_argument("target_subdomain")
+depool_parser.add_argument("source_subdomain")
+def depool(irc, source, args):
+    """<target subdomain> <source subdomain>
+
+    Removes all entries in the target subdomain that are also present in the source subdomain. This
+    can be used to maintain IRC round robins, for example.
+    """
+    permissions.checkPermissions(irc, source, ['cloudflare.depool'])
+    args = depool_parser.parse_args(args)
+    cf = get_cf()
+    zone = conf.conf.get("cloudflare", {}).get('target_zone')
+    if not zone:
+        irc.error("No target zone ID specified! Configure it via a 'cloudflare::target_zone' option.")
+        return
+
+    base_domain = cf.zones.get(zone)['result']['name']
+
+    # CloudFlare only allows removing entries by ID, so look up the exact record contents we need to remove here.
+    get_targets_body = {'name': '%s.%s' % (args.source_subdomain, base_domain)}
+    removal_targets = [record['content'] for record in cf.zones.dns_records.get(zone, params=get_targets_body)['result']]
+
+    target_body = {'name': '%s.%s' % (args.target_subdomain, base_domain)}
+    # Iterate over all DNS records in the target subdomain
+    processed = 0
+    for record in cf.zones.dns_records.get(zone, params=target_body)['result']:
+        if record['content'] in removal_targets:
+            irc.reply('Removing record %s (%s) from target %s' %
+                      (record['id'], record['content'], args.target_subdomain))
+            response = cf.zones.dns_records.delete(zone, record['id'])
+            processed += 1
+    else:
+        irc.reply('Done, processed %s result(s).' % processed)
+
+utils.add_cmd(depool, featured=True)

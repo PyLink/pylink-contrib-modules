@@ -18,6 +18,10 @@ except ImportError:
     raise ImportError("sshbl is not installed - get it at https://github.com/jlu5/sshbl")
 import concurrent.futures
 import ipaddress
+import logging
+
+# Suppress sshbl logging info
+logging.getLogger("sshbl").setLevel(logging.WARNING)
 
 from pylinkirc.log import log
 from pylinkirc import utils, conf

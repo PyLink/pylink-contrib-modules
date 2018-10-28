@@ -32,13 +32,15 @@ def _submit_dronebl(irc, ip, apikey, nickuserhost=None):
     log.debug('(%s) badchans: posting to dronebl: %s', irc.name, xml_data)
 
     # Expecting this to block
-    r = requests.post('https://dronebl.org/rpc2', data=xml_data, headers=headers)
+    r = requests.post('https://dronebl.org/RPC2', data=xml_data, headers=headers)
 
     dronebl_response = r.text
 
     log.debug('(%s) badchans: got response from dronebl: %s', irc.name, dronebl_response)
-    if '<success' not in dronebl_response:
-        log.warning('dronebl submission error:', dronebl_response)
+    if '<success' in dronebl_response:
+        log.info('(%s) badchans: got success for DroneBL on %s (%s)', irc.name, ip, nickuserhost or 'some n!u@h')
+    else:
+        log.warning('(%s) badchans: dronebl submission error:', irc.name, dronebl_response)
 
 DNSBLIM_TYPE = 5  # Abusive Hosts
 def _submit_dnsblim(irc, ip, apikey, nickuserhost=None):

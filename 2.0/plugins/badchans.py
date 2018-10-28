@@ -17,6 +17,9 @@ def handle_join(irc, source, command, args):
     badchans = irc.serverdata.get('badchans')
     if not badchans:
         return
+    elif not isinstance(badchans, list):
+        log.error("(%s) badchans: the 'badchans' option must be a list of strings, not a %s", irc.name, type(badchans))
+        return
 
     channel = args['channel']
     for badchan in badchans:

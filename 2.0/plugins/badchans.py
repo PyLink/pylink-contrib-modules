@@ -7,6 +7,8 @@ from pylinkirc.log import log
 
 import concurrent.futures
 import ipaddress
+import json
+import requests
 
 MAX_THREADS = conf.conf.get('badchans', {}).get('max_threads', 10)
 pool = None
@@ -21,7 +23,7 @@ def die(irc=None):
 
 DRONEBL_TYPE = 3  # IRC spam drone
 def _submit_dronebl(irc, ip, apikey, nickuserhost=None):
-    reason = irc.get_service_option('badchans', 'dronebl_reason', "A user on this host joined an IRC spamtrap channel.")
+    reason = irc.get_service_option('badchans', 'dnsbl_reason', "A user on this host joined an IRC spamtrap channel.")
 
     request = '<add ip="%s" type="%s" comment="%s" />' % (ip, DRONEBL_TYPE, reason)
     xml_data = '<?xml version="1.0"?><request key="%s">%s</request>' % (apikey, request)
@@ -37,6 +39,27 @@ def _submit_dronebl(irc, ip, apikey, nickuserhost=None):
     log.debug('(%s) badchans: got response from dronebl: %s', irc.name, dronebl_response)
     if '<success' not in dronebl_response:
         log.warning('dronebl submission error:', dronebl_response)
+
+DNSBLIM_TYPE = 5  # Abusive Hosts
+def _submit_dnsblim(irc, ip, apikey, nickuserhost=None):
+    reason = irc.get_service_option('badchans', 'dnsbl_reason', "A user on this host joined an IRC spamtrap channel.")
+
+    request = {
+       'key': apikey,
+       'addresses': [{
+           'ip': ip,
+           'type': str(DNSBLIM_TYPE),
+           'reason': reason,
+       }],
+    }
+    headers = {'Content-Type': 'application/json'}
+
+    log.debug('(%s) badchans: posting to dnsblim: %s', irc.name, request)
+
+    # Expecting this to block
+    r = requests.post('https://api.dnsbl.im/import', data=json.dumps(request), headers=headers)
+
+    #log.debug('(%s) badchans: got response from dnsblim: %s', irc.name, r.text)
 
 REASON = "You have si" + "nned..."  # XXX: config option
 def handle_join(irc, source, command, args):
@@ -104,8 +127,13 @@ def handle_join(irc, source, command, args):
 
                     dronebl_key = irc.get_service_option('badchans', 'dronebl_key')
                     if dronebl_key:
-                        log.debug('(%s) badchans: submitting IP %s (%s) to DroneBL', irc.name, ip, nuh)
-                        pool.submit(_submit_dronebl, irc, dronebl_key, nickuserhost=nuh)
+                        log.info('(%s) badchans: submitting IP %s (%s) to DroneBL', irc.name, ip, nuh)
+                        pool.submit(_submit_dronebl, irc, ip, dronebl_key, nuh)
+
+                    dnsblim_key = irc.get_service_option('badchans', 'dnsblim_key')
+                    if dnsblim_key:
+                        log.info('(%s) badchans: submitting IP %s (%s) to DNSBL.im', irc.name, ip, nuh)
+                        pool.submit(_submit_dnsblim, irc, ip, dnsblim_key, nuh)
 
 
 utils.add_hook(handle_join, 'JOIN')

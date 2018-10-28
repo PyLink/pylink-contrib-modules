@@ -21,9 +21,11 @@ def die(irc=None):
     if pool is not None:
         pool.shutdown(wait=False)
 
+DEFAULT_DNSBL_REASON = "A user o" + "n this host" + " joined an IR" + "C spa" + "mtra" + "p channel."
+
 DRONEBL_TYPE = 3  # IRC spam drone
 def _submit_dronebl(irc, ip, apikey, nickuserhost=None):
-    reason = irc.get_service_option('badchans', 'dnsbl_reason', "A user on this host joined an IRC spamtrap channel.")
+    reason = irc.get_service_option('badchans', 'dnsbl_reason', DEFAULT_DNSBL_REASON)
 
     request = '<add ip="%s" type="%s" comment="%s" />' % (ip, DRONEBL_TYPE, reason)
     xml_data = '<?xml version="1.0"?><request key="%s">%s</request>' % (apikey, request)
@@ -44,7 +46,7 @@ def _submit_dronebl(irc, ip, apikey, nickuserhost=None):
 
 DNSBLIM_TYPE = 5  # Abusive Hosts
 def _submit_dnsblim(irc, ip, apikey, nickuserhost=None):
-    reason = irc.get_service_option('badchans', 'dnsbl_reason', "A user on this host joined an IRC spamtrap channel.")
+    reason = irc.get_service_option('badchans', 'dnsbl_reason', DEFAULT_DNSBL_REASON)
 
     request = {
        'key': apikey,

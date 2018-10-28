@@ -11,7 +11,7 @@ def handle_join(irc, source, command, args):
     killonjoin JOIN listener.
     """
     # Ignore our own clients and other Ulines
-    if irc.is_privileged_service(source) or irc.is_internal_client(source):
+    if irc.is_privileged_service(source) or irc.is_internal_server(source):
         return
 
     badchans = irc.serverdata.get('badchans')

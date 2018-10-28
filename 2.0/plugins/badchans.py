@@ -5,6 +5,39 @@ badchans.py - Kills unopered users when they join specified channels.
 from pylinkirc import utils, conf, world
 from pylinkirc.log import log
 
+import concurrent.futures
+import ipaddress
+
+MAX_THREADS = conf.conf.get('badchans', {}).get('max_threads', 10)
+pool = None
+
+def main(irc=None):
+    global pool
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=MAX_THREADS)
+
+def die(irc=None):
+    if pool is not None:
+        pool.shutdown(wait=False)
+
+DRONEBL_TYPE = 3  # IRC spam drone
+def _submit_dronebl(irc, ip, apikey, nickuserhost=None):
+    reason = irc.get_service_option('badchans', 'dronebl_reason', "A user on this host joined an IRC spamtrap channel.")
+
+    request = '<add ip="%s" type="%s" comment="%s" />' % (ip, DRONEBL_TYPE, reason)
+    xml_data = '<?xml version="1.0"?><request key="%s">%s</request>' % (apikey, request)
+    headers = {'Content-Type': 'text/xml'}
+
+    log.debug('(%s) badchans: posting to dronebl: %s', irc.name, xml_data)
+
+    # Expecting this to block
+    r = requests.post('https://dronebl.org/rpc2', data=xml_data, headers=headers)
+
+    dronebl_response = r.text
+
+    log.debug('(%s) badchans: got response from dronebl: %s', irc.name, dronebl_response)
+    if '<success' not in dronebl_response:
+        log.warning('dronebl submission error:', dronebl_response)
+
 REASON = "You have si" + "nned..."  # XXX: config option
 def handle_join(irc, source, command, args):
     """
@@ -68,5 +101,11 @@ def handle_join(irc, source, command, args):
                     log.info('(%s) badchans: killing user %s for joining channel %s',
                              irc.name, nuh, channel)
                     irc.kill(asm_uid or irc.sid, user, REASON)
+
+                    dronebl_key = irc.get_service_option('badchans', 'dronebl_key')
+                    if dronebl_key:
+                        log.debug('(%s) badchans: submitting IP %s (%s) to DroneBL', irc.name, ip, nuh)
+                        pool.submit(_submit_dronebl, irc, dronebl_key, nickuserhost=nuh)
+
 
 utils.add_hook(handle_join, 'JOIN')

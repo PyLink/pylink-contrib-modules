@@ -1,6 +1,39 @@
 """
-badchans.py - Kills unopered users when they join specified channels.
+badchans.py - Kills unopered users when they join specified channels and optionally reports them to DNSBLs.
 """
+
+'''
+Configuration example:
+
+badchans:
+    # Configurable list of hosts to exempt. Opers, configured ulines, and non-global addresses
+    # (e.g. localhost, 10.x.x.x) are automatically exempt.
+    exempt_hosts:
+        - "*!*@some.host"
+        - "*!*@1.2.3.4"
+
+    # Specify API keys for DroneBL and DNSBL.im to automatically submit to them. If any of these are missing, submission
+    # to that blacklist will be automatically disabled.
+    dnsblim_key: "123456"
+    dronebl_key: "abcdef"
+
+    # The DNSBL submission comment to use. Defaults to the value in DEFAULT_DNSBL_REASON below.
+    #dnsbl_reason: "You did the unspeakable!"
+
+    # Max threads count for DNSBL submission (defaults to 5)
+    #max_threads: 5
+
+servers:
+    net1:
+        # When anyone joins a channel matching these, they will be killed and (optionally) reported to DNSBLs.
+        # Note that this does not create any channels automatically (e.g. in /list), so you'll want to either
+        # use a custom module to fake /list replies or create the channels yourself.
+
+        # Alternatively, PyLink 2.0.2+ users can use PyLink to keep these channels open by adding them to
+        # the "channels" config variable and enabling "join_empty_channels".
+        # This config option is case insensitive and supports simple globs (?*).
+        badchans: ["#spamtrap0*", "#somebadplace"]
+'''
 
 from pylinkirc import utils, conf, world
 from pylinkirc.log import log

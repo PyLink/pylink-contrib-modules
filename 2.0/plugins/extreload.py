@@ -52,6 +52,7 @@ def newsrc(irc, source, args):
 
     # Backup & deactivate our current distribution
     current_distribution = pkg_resources.get_distribution(MODULE_NAME)
+    current_version = str(current_distribution)
     _deactivate(current_distribution)
 
     # Create the new one
@@ -69,5 +70,5 @@ def newsrc(irc, source, args):
         irc.error("Failed to activate new distribution: %s: %s" % (e.__class__.__name__, str(e)))
     else:
         _refresh_packages()
-        log.info("Successfully upgraded %s => %s", current_distribution, new_distribution)
-        irc.reply("Done. Upgraded %s => %s" % (str(current_distribution), str(new_distribution)))
+        log.info("Successfully upgraded %s => %s", current_version, new_distribution)
+        irc.reply("Done. Upgraded %s => %s" % (str(current_version), str(new_distribution)))

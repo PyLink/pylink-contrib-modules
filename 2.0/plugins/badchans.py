@@ -158,8 +158,8 @@ def handle_join(irc, source, command, args):
                             notice=True,
                             source=asm_uid or irc.pseudoclient.uid)
                 else:
-                    log.info('(%s) badchans: killing user %s for joining channel %s',
-                             irc.name, nuh, channel)
+                    log.info('(%s) badchans: killing user %s (server: %s) for joining channel %s',
+                             irc.name, nuh, irc.get_friendly_name(irc.get_server(user)), channel)
                     irc.kill(asm_uid or irc.sid, user, REASON)
 
                     dronebl_key = irc.get_service_option('badchans', 'dronebl_key')

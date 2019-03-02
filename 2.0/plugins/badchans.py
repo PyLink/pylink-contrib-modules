@@ -75,7 +75,7 @@ def _submit_dronebl(irc, ip, apikey, nickuserhost=None):
     if '<success' in dronebl_response:
         log.info('(%s) badchans: got success for DroneBL on %s (%s)', irc.name, ip, nickuserhost or 'some n!u@h')
     else:
-        log.warning('(%s) badchans: dronebl submission error:', irc.name, dronebl_response)
+        log.warning('(%s) badchans: dronebl submission error: %s', irc.name, dronebl_response)
 
 DNSBLIM_TYPE = 5  # Abusive Hosts
 def _submit_dnsblim(irc, ip, apikey, nickuserhost=None):

@@ -47,14 +47,19 @@ from pylinkirc.log import log
 import concurrent.futures
 import ipaddress
 import json
+import time
+
 import requests
+import cachetools
 
 MAX_THREADS = conf.conf.get('badchans', {}).get('max_threads', 10)
 pool = None
+seen_ips = None
 
 def main(irc=None):
-    global pool
+    global pool, seen_ips
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=MAX_THREADS)
+    seen_ips = cachetools.LRUCache(maxsize=2048)
 
 def die(irc=None):
     if pool is not None:
@@ -180,15 +185,20 @@ def handle_join(irc, source, command, args):
                     else:
                         irc.kill(asm_uid or irc.sid, user, REASON)
 
-                    dronebl_key = irc.get_service_option('badchans', 'dronebl_key')
-                    if dronebl_key:
-                        log.info('(%s) badchans: submitting IP %s (%s) to DroneBL', irc.name, ip, nuh)
-                        pool.submit(_submit_dronebl, irc, ip, dronebl_key, nuh)
+                    if ip not in seen_ips:
+                        dronebl_key = irc.get_service_option('badchans', 'dronebl_key')
+                        if dronebl_key:
+                            log.info('(%s) badchans: submitting IP %s (%s) to DroneBL', irc.name, ip, nuh)
+                            pool.submit(_submit_dronebl, irc, ip, dronebl_key, nuh)
 
-                    dnsblim_key = irc.get_service_option('badchans', 'dnsblim_key')
-                    if dnsblim_key:
-                        log.info('(%s) badchans: submitting IP %s (%s) to DNSBL.im', irc.name, ip, nuh)
-                        pool.submit(_submit_dnsblim, irc, ip, dnsblim_key, nuh)
+                        dnsblim_key = irc.get_service_option('badchans', 'dnsblim_key')
+                        if dnsblim_key:
+                            log.info('(%s) badchans: submitting IP %s (%s) to DNSBL.im', irc.name, ip, nuh)
+                            pool.submit(_submit_dnsblim, irc, ip, dnsblim_key, nuh)
 
+                        seen_ips[ip] = time.time()
+
+                    else:
+                        log.debug('(%s) badchans: ignoring already submitted IP %s', irc.name, ip)
 
 utils.add_hook(handle_join, 'JOIN')

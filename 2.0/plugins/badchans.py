@@ -33,6 +33,12 @@ servers:
         # the "channels" config variable and enabling "join_empty_channels".
         # This config option is case insensitive and supports simple globs (?*).
         badchans: ["#spamtrap0*", "#somebadplace"]
+
+        # Determines whether to use KLINE/GLINE instead of KILL on target users. Defaults to false if not set.
+        badchans_use_kline: false
+        # Ban duration, if use_kline is enabled. This uses a time duration in the form 1w2d3h4m5s, and defaults
+        # to 24h (24 hours) if not set.
+        badchans_kline_duration: 24h
 '''
 
 from pylinkirc import utils, conf, world
@@ -99,6 +105,7 @@ def _submit_dnsblim(irc, ip, apikey, nickuserhost=None):
     #log.debug('(%s) badchans: got response from dnsblim: %s', irc.name, r.text)
 
 REASON = "You have si" + "nned..."  # XXX: config option
+DEFAULT_BAN_DURATION = '24h'
 def handle_join(irc, source, command, args):
     """
     killonjoin JOIN listener.
@@ -113,6 +120,14 @@ def handle_join(irc, source, command, args):
     elif not isinstance(badchans, list):
         log.error("(%s) badchans: the 'badchans' option must be a list of strings, not a %s", irc.name, type(badchans))
         return
+
+    use_kline = irc.get_service_option('badchans', 'use_kline', False)
+    kline_duration = irc.get_service_option('badchans', 'kline_duration', DEFAULT_BAN_DURATION)
+    try:
+        kline_duration = utils.parse_duration(kline_duration)
+    except ValueError:
+        log.warning('(%s) badchans: invalid kline duration %s', irc.name, kline_duration, exc_info=True)
+        kline_duration = DEFAULT_BAN_DURATION
 
     channel = args['channel']
     for badchan in badchans:
@@ -158,9 +173,12 @@ def handle_join(irc, source, command, args):
                             notice=True,
                             source=asm_uid or irc.pseudoclient.uid)
                 else:
-                    log.info('(%s) badchans: killing user %s (server: %s) for joining channel %s',
+                    log.info('(%s) badchans: punishing user %s (server: %s) for joining channel %s',
                              irc.name, nuh, irc.get_friendly_name(irc.get_server(user)), channel)
-                    irc.kill(asm_uid or irc.sid, user, REASON)
+                    if use_kline:
+                        irc.set_server_ban(asm_uid or irc.sid, kline_duration, host=ip, reason=REASON)
+                    else:
+                        irc.kill(asm_uid or irc.sid, user, REASON)
 
                     dronebl_key = irc.get_service_option('badchans', 'dronebl_key')
                     if dronebl_key:

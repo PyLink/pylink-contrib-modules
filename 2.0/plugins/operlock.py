@@ -25,6 +25,9 @@ def _should_enforce(irc, source, args):
     elif source not in irc.users:
         # Target isn't a user
         return False
+    elif irc.is_internal_client(source):
+        # Don't enforce against internal clients.
+        return
 
     # Ignore exempt hosts
     for glob in exemptions:

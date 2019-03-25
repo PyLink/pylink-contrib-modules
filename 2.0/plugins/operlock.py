@@ -39,13 +39,14 @@ def _should_enforce(irc, source, args):
 def handle_part(irc, source, command, args):
     """Force joins users who try to leave a designated staff channel."""
     staffchans = irc.get_service_option('operlock', 'channels', default=None) or []
+    staffchans = list(map(irc.to_lower, staffchans))
     if not staffchans:
         return
     elif not _should_enforce(irc, source, args):
         return
 
     for channel in args['channels']:
-        if channel in staffchans and irc.is_oper(source):
+        if irc.to_lower(channel) in staffchans and irc.is_oper(source):
             if irc.protoname in ('inspircd', 'unreal'):
                 irc.msg(source, "Warning: You must deoper to leave %r." % channel, notice=True)
                 irc._send_with_prefix(irc.sid, 'SAJOIN %s %s' % (source, channel))
@@ -58,6 +59,7 @@ DEOPER_KICK_REASON = 'User has deopered'
 def handle_mode(irc, source, command, args):
     """Kicks users who deoper from designated staff channels."""
     staffchans = irc.get_service_option('operlock', 'channels', default=None) or []
+    staffchans = list(map(irc.to_lower, staffchans))
     if not staffchans:
         return
     elif not _should_enforce(irc, source, args):
@@ -66,7 +68,7 @@ def handle_mode(irc, source, command, args):
     if ('-o', None) in args['modes']:
         # User is deopering
         for channel in irc.users[source].channels:
-            if channel in staffchans:
+            if irc.to_lower(channel) in staffchans:
                 if irc.protoname in ('inspircd', 'unreal'):
                     irc._send_with_prefix(irc.sid, 'SAPART %s %s :%s' % (source, channel, DEOPER_KICK_REASON))
                 else:
